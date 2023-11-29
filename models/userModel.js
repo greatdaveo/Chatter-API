@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const { Schema, model } = mongoose;
+// const { Schema, model } = mongoose;
 // const bcrypt = require("bcrypt");
 
-const UserSchema = new Schema({
+const UserSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   selectedOption: { type: String },
@@ -19,8 +19,8 @@ const UserSchema = new Schema({
     required: true,
     minlength: 5,
     validate: {
-      validator: function (value) {
-        return value === this.password;
+      validator: function (val) {
+        return val === this.password;
       },
       message: "Passwords do not match",
     },
@@ -36,6 +36,6 @@ const UserSchema = new Schema({
 //     throw error;
 //   }
 
-const UserModel = model("User", UserSchema);
+const UserModel = mongoose.model("UserCollection", UserSchema);
 
 module.exports = UserModel;
