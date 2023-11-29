@@ -3,6 +3,9 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const UserModel = require("./models/userModel");
 
+// FOR THE PASSWORD ENCRYPTION 
+const bcrypt = require("bcryptjs");
+
 const app = express();
 app.use(express.json());
 
@@ -25,8 +28,12 @@ mongoose.connect(
 // FOR REGISTRATION
 app.post("/register", async (req, res) => {
   try {
+    const oldUser = UserModel.find({email})
+    if(oldUser) {
+      res.json({message: "User Exists!!!"})
+    }
     const userDoc = await UserModel.create(req.body);
-    // console.log(userDoc);
+    console.log(userDoc);
     res.json(userDoc);
   } catch (err) {
     res.status(400).json(err);
