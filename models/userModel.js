@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-// const bcrypt = require("bcryptjs");
+const bcrypt = require("bcryptjs");
 
 const UserSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
@@ -17,24 +17,16 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 5,
+    select: false,
     validate: {
       validator: function (val) {
         return val === this.password;
       },
-      message: "Passwords do not match",
+      message: "Passwords do not match! Please try again.",
     },
   },
 });
 
-// // Define the comparePassword method
-// Schema.methods.comparePassword = async function (candidatePassword) {
-//   try {
-//     // Use bcrypt to compare the provided password with the stored hash
-//     return await bcrypt.compare(candidatePassword, this.password);
-//   } catch (error) {
-//     throw error;
-//   }
-
-const UserModel = mongoose.model("UserCollection", UserSchema);
+const UserModel = mongoose.model("Users", UserSchema);
 
 module.exports = UserModel;
