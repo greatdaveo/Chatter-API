@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const UserModel = require("./models/UserModel");
+const aws = require("aws-sdk");
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -20,8 +21,15 @@ app.use(
     origin: "http://localhost:5173",
   })
 );
+// MongoDB Connection
+mongoose.connect(process.env.MongoDB_CONN_STR, { autoIndex: true });
+// AWS S3 Bucket Connection
+const s3 = new aws.S3({
+  region: "eu-west-2",
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 
-mongoose.connect(process.env.MongoDB_CONN_STR);
 
 // FOR REGISTRATION
 app.post("/register", async (req, res) => {
