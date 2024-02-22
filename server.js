@@ -30,6 +30,28 @@ const s3 = new aws.S3({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
+// To set the blog banner image url name
+const generateFileUrl = async () => {
+  const date = new Date();
+  const imageName = `photo-${date.getTime()}.jpeg`;
+
+  return await s3.getSignedUrlPromise("putObject", {
+    Bucket: "chatter-blog-bucket-name",
+    Key: imageName,
+    Expires: 10000,
+    ContentType: "image/jpeg",
+  });
+};
+
+// To upload the blog banner image url to AWS
+app.get("/upload-url", (req, res) => {
+  generateFileUrl()
+    .then((url) => res.status(200).json({ uploadUrl: url }))
+    .catch((err) => {
+      console.log(err.message);
+      return res.status(500).json({ error: err.message });
+    });
+});
 
 // FOR REGISTRATION
 app.post("/register", async (req, res) => {
@@ -109,5 +131,3 @@ app.get("/test", (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-
-
