@@ -122,6 +122,30 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// To HANDLE USER COOKIEs
+app.get("/profile", (req, res) => {
+  const { access_token } = req.cookies;
+  // console.log(access_token);
+  // const decodedPayload = jwt.decode(access_token);
+  // console.log(decodedPayload);
+
+  if (access_token) {
+    jwt.verify(
+      access_token,
+      process.env.JWT_SECRET,
+      {},
+      async (err, cookieData) => {
+        if (err) throw err;
+        const {name, email, _id } = await UserModel.findById(cookieData.id);
+        res.json({ name, email, _id });
+      }
+    );
+  } else {
+    res.json(null);
+  }
+});
+
+
 const port = 4000;
 
 app.get("/test", (req, res) => {
