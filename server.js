@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const UserModel = require("./models/UserModel");
+const BlogModel = require("./models/BlogModel");
+
 const aws = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
 
@@ -153,6 +155,7 @@ app.get("/profile", (req, res) => {
 app.post("/create-blog", verifyToken, async (req, res) => {
   // The req.user is from the verifyToken Middleware and it will be used when the blog is to be published
   let authorId = req.user;
+  // console.log("Req User:", req.user);
 
   let { title, description, banner, tags, content, draft } = req.body;
 
@@ -198,6 +201,43 @@ app.post("/create-blog", verifyToken, async (req, res) => {
   // console.log(blogId);
 
   // To save the blog post the database
+  let createdBlogPost = new BlogModel({
+    title,
+    description,
+    banner,
+    tags,
+    content,
+    draft: Boolean(draft),
+    author: authorId,
+    blog_id: blogId,
+  });
+
+  // To store the data in the database
+  createdBlogPost
+    .save()
+    .then((blogPost) => {
+      // To set the incrementVal to update the number of post the user has created
+      let incrementVal = draft ? 0 : 1;
+
+      UserModel.findOneAndUpdate(
+        { _id: authorId },
+        {
+          $inc: { "accountInfo.total_posts": incrementVal },
+          $push: { blogs: blogPost._id },
+        }
+      )
+        .then((user) => {
+          return res.status(200).json({ id: blogPost.blog_id });
+        })
+        .catch((err) => {
+          return res
+            .status(500)
+            .json({ error: "Failed to update total posts number!" });
+        });
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err });
+    });
 });
 
 

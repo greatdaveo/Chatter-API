@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
 const blogSchema = new mongoose.Schema({
   blog_id: {
@@ -33,7 +34,7 @@ const blogSchema = new mongoose.Schema({
   },
 
   author: {
-    type: new mongoose.Schema.Types.ObjectId(),
+    type: Schema.Types.ObjectId,
     required: true,
     ref: "users",
   },

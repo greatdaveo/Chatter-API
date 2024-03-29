@@ -9,8 +9,9 @@ const verifyToken = (req, res, next) => {
       return res.status(403).json({ error: "Access token is invalid" });
     }
 
-    next();
     req.user = user.id;
+    next();
+    // console.log("User ID:", req.user);
   });
 };
 
