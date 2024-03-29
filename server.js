@@ -121,9 +121,14 @@ app.post("/login", async (req, res) => {
 
     // To handle cookie
     const token = jwt.sign({ email, id: userDoc._id }, process.env.JWT_SECRET);
+    // console.log(token);
     // To send user data except the password to the client for security reasons
     const { password: passwd, ...otherUserInfo } = userDoc._doc;
-    res.cookie("access_token", token).status(200).json(otherUserInfo);
+    res
+      .cookie("access_token", token)
+      .status(200)
+      .json({ user: otherUserInfo, token });
+    // res.json(token);
   } catch (error) {
     console.log(error);
   }
@@ -155,8 +160,7 @@ app.get("/profile", (req, res) => {
 app.post("/create-blog", verifyToken, async (req, res) => {
   // The req.user is from the verifyToken Middleware and it will be used when the blog is to be published
   let authorId = req.user;
-  // console.log("Req User:", req.user);
-
+  // console.log(authorId)
   let { title, description, banner, tags, content, draft } = req.body;
 
   if (!title.length) {
