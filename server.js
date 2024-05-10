@@ -1,23 +1,13 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const UserModel = require("./models/UserModel");
-const BlogModel = require("./models/BlogModel");
-
-const aws = require("aws-sdk");
-const { v4: uuidv4 } = require("uuid");
-
-// To generate a unique ID
-const uniqueId = uuidv4();
+const userRoute = require("./routes/userRoute");
+const blogRoute = require("./routes/blogRoute");
 
 const dotenv = require("dotenv");
 dotenv.config();
 const cookieParser = require("cookie-parser");
-// To handle cookies
-const jwt = require("jsonwebtoken");
-// FOR THE PASSWORD ENCRYPTION
-const bcrypt = require("bcryptjs");
-const verifyToken = require("./Middleware/verifyToken");
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -28,222 +18,12 @@ app.use(
     origin: "http://localhost:5173",
   })
 );
+
+app.use("/api/user", userRoute);
+app.use("/api/blog", blogRoute);
+
 // MongoDB Connection
 mongoose.connect(process.env.MongoDB_CONN_STR, { autoIndex: true });
-// AWS S3 Bucket Connection
-const s3 = new aws.S3({
-  region: "eu-west-2",
-  accessKeyId: process.env.AWS_ACCESS_KEY,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-});
-
-// To set the blog banner image url name
-const generateFileUrl = async () => {
-  const date = new Date();
-  const imageName = `photo-${date.getTime()}.jpeg`;
-
-  return await s3.getSignedUrlPromise("putObject", {
-    Bucket: "chatter-blog-bucket-name",
-    Key: imageName,
-    Expires: 10000,
-    ContentType: "image/jpeg",
-  });
-};
-
-// To upload the blog banner image url to AWS
-app.get("/upload-url", (req, res) => {
-  generateFileUrl()
-    .then((url) => res.status(200).json({ uploadUrl: url }))
-    .catch((err) => {
-      console.log(err.message);
-      return res.status(500).json({ error: err.message });
-    });
-});
-
-// FOR REGISTRATION
-app.post("/register", async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    selectOption,
-    email,
-    password,
-    confirmPassword,
-  } = req.body;
-
-  try {
-    const oldUser = await UserModel.findOne({ email });
-    if (oldUser) {
-      res.status(401).json("User exist, kindly login!");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      res.status(401).json("Passwords do not match!");
-      return;
-    }
-
-    const hashedPassword = bcrypt.hashSync(password, 10);
-
-    const newUser = new UserModel({
-      firstName,
-      lastName,
-      selectOption,
-      email,
-      password: hashedPassword,
-      confirmPassword: hashedPassword,
-    });
-
-    await newUser.save();
-    // console.log(newUser);
-
-    res.status(201).json("You have just created an account!");
-  } catch (err) {
-    res.status(401).json("Please fill all required details!");
-    // console.log(err.message);
-  }
-});
-
-// FOR LOGIN
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const userDoc = await UserModel.findOne({ email });
-    if (!userDoc) {
-      res.status(400).json("User doesn't exist!");
-    }
-
-    const validPassword = bcrypt.compareSync(password, userDoc.password);
-    if (!validPassword) {
-      res.status(400).json("Incorrect email or password!");
-    }
-
-    // To handle cookie
-    const token = jwt.sign({ email, id: userDoc._id }, process.env.JWT_SECRET);
-    // console.log(token);
-    // To send user data except the password to the client for security reasons
-    const { password: passwd, ...otherUserInfo } = userDoc._doc;
-    res
-      .cookie("access_token", token)
-      .status(200)
-      .json({ user: otherUserInfo, token });
-    // res.json(token);
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-// To HANDLE USER COOKIEs
-app.get("/profile", (req, res) => {
-  const { access_token } = req.cookies;
-  // console.log(access_token);
-  // const decodedPayload = jwt.decode(access_token);
-  // console.log(decodedPayload);
-
-  if (access_token) {
-    jwt.verify(
-      access_token,
-      process.env.JWT_SECRET,
-      {},
-      async (err, cookieData) => {
-        if (err) throw err;
-        const { name, email, _id } = await UserModel.findById(cookieData.id);
-        res.json({ name, email, _id });
-      }
-    );
-  } else {
-    res.json(null);
-  }
-});
-
-app.post("/create-blog", verifyToken, async (req, res) => {
-  // The req.user is from the verifyToken Middleware and it will be used when the blog is to be published
-  let authorId = req.user;
-  // console.log(authorId)
-  let { title, description, banner, tags, content, draft } = req.body;
-
-  if (!title.length) {
-    return res
-      .status(403)
-      .json({ error: "Please provide a title to publish the blog post" });
-  }
-
-  if (!description.length || description.length > 200) {
-    return res.status(403).json({
-      error: "Please ensure blog description is not more than 200 characters",
-    });
-  }
-
-  if (!banner.length) {
-    return res
-      .status(403)
-      .json({ error: "Please provide blog banner to publish it!" });
-  }
-
-  if (!content.blocks.length) {
-    return res
-      .status(403)
-      .json({ error: "Please provide a blog content to publish!" });
-  }
-
-  if (!tags.length || tags.length > 10) {
-    return res
-      .status(403)
-      .json({ error: "Please provide tags with maximum of 10 to publish!" });
-  }
-
-  // To convert each tag to lower case to make it easy to be searched for
-  tags = tags.map((tag) => tag.toLowerCase());
-
-  // To set a blogId
-  let blogId =
-    title
-      .replace(/[^a-zA-Z0-9]/g, " ")
-      .replace(/\s+/g, "-")
-      .trim() + uniqueId;
-  // console.log(blogId);
-
-  // To save the blog post the database
-  let createdBlogPost = new BlogModel({
-    title,
-    description,
-    banner,
-    tags,
-    content,
-    draft: Boolean(draft),
-    author: authorId,
-    blog_id: blogId,
-  });
-
-  // To store the data in the database
-  createdBlogPost
-    .save()
-    .then((blogPost) => {
-      // To set the incrementVal to update the number of post the user has created
-      let incrementVal = draft ? 0 : 1;
-
-      UserModel.findOneAndUpdate(
-        { _id: authorId },
-        {
-          $inc: { "accountInfo.total_posts": incrementVal },
-          $push: { blogs: blogPost._id },
-        }
-      )
-        .then((user) => {
-          return res.status(200).json({ id: blogPost.blog_id });
-        })
-        .catch((err) => {
-          return res
-            .status(500)
-            .json({ error: "Failed to update total posts number!" });
-        });
-    })
-    .catch((err) => {
-      return res.status(500).json({ error: err });
-    });
-});
-
 
 const port = 4000;
 
