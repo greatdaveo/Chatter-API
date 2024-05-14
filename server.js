@@ -19,8 +19,8 @@ app.use(
   })
 );
 
-app.use("/api/user", userRoute);
-app.use("/api/blog", blogRoute);
+app.use("/user", userRoute);
+app.use("/blog", blogRoute);
 
 // MongoDB Connection
 mongoose.connect(process.env.MongoDB_CONN_STR, { autoIndex: true });

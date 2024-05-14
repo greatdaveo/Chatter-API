@@ -47,6 +47,7 @@ const createPost = async (req, res) => {
       .status(403)
       .json({ error: "Please provide a title to publish the blog post" });
   }
+  
   // To handle draft submission
   if (!draft) {
     if (!description.length || description.length > 200) {
