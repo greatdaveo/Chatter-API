@@ -1,8 +1,62 @@
 const UserModel = require("../models/UserModel");
 // To handle cookies
 const jwt = require("jsonwebtoken");
-// To Encrypt passwrod
+// To Encrypt password
 const bcrypt = require("bcryptjs");
+// For Firebase Auth
+const { getAuth } = require("firebase-admin/auth");
+// FOR GOOGLE AUTH
+const googleAuth = async (req, res) => {
+  let { access_token } = req.body;
+  console.log("Received Token:", access_token);
+
+  if (!access_token) {
+    return res.status(400).json({ error: "Access token is required" });
+  }
+
+  try {
+    const decodedUser = await getAuth().verifyIdToken(access_token);
+    const { email, name } = decodedUser;
+
+    let userDoc = await UserModel.findOne({ email })
+      .select("firstName lastName google_auth")
+      .catch((err) => {
+        throw new Error(err.message);
+      });
+
+    if (userDoc) {
+      if (!userDoc.google_auth) {
+        // Login
+        return res.status(403).json({
+          error:
+            "This email was signed up with google. Please log in with password to access the account!",
+        });
+      }
+    } else {
+      // Sign up if user is new
+      userDoc = new UserModel({
+        firstName: name,
+        email,
+        google_auth: true,
+      });
+
+      userDoc = await userDoc.save().catch((err) => {
+        throw new Error(err.message);
+      });
+    }
+
+    // To handle cookie
+    const token = jwt.sign({ email, id: userDoc._id }, process.env.JWT_SECRET);
+    // console.log(token);
+
+    return res.cookie("access_token", token).status(200).json(userDoc);
+  } catch (err) {
+    console.error("Error verifying token:", err.message);
+    return res.status(500).json({
+      error: "Failed to authenticate you with Google, please try again!",
+    });
+  }
+};
 
 // FOR REGISTRATION
 const registerUser = async (req, res) => {
@@ -78,6 +132,17 @@ const loginUser = async (req, res) => {
   }
 };
 
+// FOR LOGOUT
+const logoutUser = async (req, res) => {
+  res.cookie("access_token", "", {
+    path: "/",
+    httpOnly: true,
+    expires: new Date(0),
+  });
+
+  res.status(200).json({ message: "You have logged out successfully!" });
+};
+
 // To HANDLE USER COOKIEs
 const userCookiesProfile = (req, res) => {
   const { access_token } = req.cookies;
@@ -101,4 +166,10 @@ const userCookiesProfile = (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, userCookiesProfile };
+module.exports = {
+  registerUser,
+  loginUser,
+  logoutUser,
+  userCookiesProfile,
+  googleAuth,
+};

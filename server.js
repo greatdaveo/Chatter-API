@@ -3,6 +3,10 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const userRoute = require("./routes/userRoute");
 const blogRoute = require("./routes/blogRoute");
+// For Firebase auth
+const firebaseAdmin = require("firebase-admin");
+const serviceAccount = require("./serviceAccountKey.json");
+// assert{type: json}
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -11,6 +15,11 @@ const cookieParser = require("cookie-parser");
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+// For Firebase
+firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+});
 
 app.use(
   cors({

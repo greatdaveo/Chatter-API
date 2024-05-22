@@ -4,8 +4,8 @@ const Schema = mongoose.Schema;
 const UserSchema = new Schema(
   {
     firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    selectedOption: { type: String },
+    lastName: { type: String, required: false }, // To make lastName optional for Google user
+    selectedOption: { type: String, default: "reader" },
     email: {
       required: true,
       type: String,
@@ -13,10 +13,18 @@ const UserSchema = new Schema(
       lowercase: true,
       match: /^\S+@\S+\.\S+$/,
     },
-    password: { type: String, required: true, minlength: 5 },
+    password: {
+      type: String,
+      required: function () {
+        return !this.google_auth; //Only required if not Google auth
+      },
+      minlength: 5,
+    },
     confirmPassword: {
       type: String,
-      required: true,
+      required: function () {
+        !this.google_auth;
+      },
       minlength: 5,
       select: false,
       validate: {
@@ -36,6 +44,11 @@ const UserSchema = new Schema(
         type: Number,
         default: 0,
       },
+    },
+
+    google_auth: {
+      type: Boolean,
+      default: false,
     },
 
     blogs: {
