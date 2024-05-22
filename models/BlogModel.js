@@ -36,8 +36,10 @@ const blogSchema = new mongoose.Schema({
   author: {
     type: Schema.Types.ObjectId,
     required: true,
-    ref: "users",
+    ref: "Users",
   },
+
+  draft: { type: Boolean, default: false },
 
   activity: {
     total_likes: {
@@ -54,6 +56,11 @@ const blogSchema = new mongoose.Schema({
       type: Number,
       default: 0,
     },
+  },
+
+  publishedAt: {
+    type: Date,
+    default: Date.now, // Default to current date if not provided
   },
 });
 

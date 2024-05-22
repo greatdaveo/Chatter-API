@@ -1,7 +1,7 @@
 const BlogModel = require("../models/BlogModel");
+const UserModel = require("../models/UserModel");
 const aws = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
-
 // To generate a unique ID
 const uniqueId = uuidv4();
 
@@ -47,7 +47,7 @@ const createPost = async (req, res) => {
       .status(403)
       .json({ error: "Please provide a title to publish the blog post" });
   }
-  
+
   // To handle draft submission
   if (!draft) {
     if (!description.length || description.length > 200) {
@@ -126,4 +126,32 @@ const createPost = async (req, res) => {
     });
 };
 
-module.exports = { uploadURL, createPost };
+// To Get The Latest Blog Post
+const latestBlogs = async (req, res) => {
+  let maxLimit = 5;
+
+  try {
+    // I want all blogs, except a drafted blog
+    const latestBlogData = await BlogModel.find({ draft: false })
+      .populate("author", "firstName lastName -_id")
+      .sort({ publishedAt: -1 })
+      .select("blog_id title description banner activity tags publishedAt -_id")
+      .limit(maxLimit)
+      .catch((err) => {
+        console.log("Latest Blog Data Error:", err);
+      });
+
+    if (!latestBlogData || latestBlogData.length === 0) {
+      console.log("No latest blog data found.");
+    } else {
+      console.log("Latest Blog Data:", latestBlogData);
+    }
+
+    return res.status(200).json(latestBlogData);
+  } catch (err) {
+    console.error("Latest Blog Data Error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { uploadURL, createPost, latestBlogs };
