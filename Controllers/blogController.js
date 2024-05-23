@@ -142,9 +142,9 @@ const latestBlogs = async (req, res) => {
       });
 
     if (!latestBlogData || latestBlogData.length === 0) {
-      console.log("No latest blog data found.");
+      // console.log("No latest blog data found.");
     } else {
-      console.log("Latest Blog Data:", latestBlogData);
+      // console.log("Latest Blog Data:", latestBlogData);
     }
 
     return res.status(200).json(latestBlogData);
@@ -154,4 +154,30 @@ const latestBlogs = async (req, res) => {
   }
 };
 
-module.exports = { uploadURL, createPost, latestBlogs };
+// To Get the Trending Blogs
+const trendingBlogs = async (req, res) => {
+  try {
+    const trendingBlogData = await BlogModel.find({ draft: false })
+      .populate("author", "firstName lastName -_id")
+      .sort({
+        "activity.total_read": -1,
+        "activity.total_likes": -1,
+        publishedAt: -1,
+      })
+      .select("blog_id title, publishedat -_id")
+      .limit(5);
+
+    if (!trendingBlogData || trendingBlogData.length === 0) {
+      console.log("No trending blog data found.");
+    } else {
+      console.log("Latest Blog Data:", trendingBlogData);
+    }
+
+    return res.status(200).json(trendingBlogData);
+  } catch (err) {
+    console.log("Trending Data Error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { uploadURL, createPost, latestBlogs, trendingBlogs };

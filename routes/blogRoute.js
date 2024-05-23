@@ -3,6 +3,7 @@ const {
   uploadURL,
   createPost,
   latestBlogs,
+  trendingBlogs,
 } = require("../Controllers/blogController");
 const verifyToken = require("../Middleware/verifyToken");
 
@@ -12,5 +13,6 @@ const router = express.Router();
 router.get("/upload-url", uploadURL);
 router.post("/create-blog", verifyToken, createPost);
 router.get("/latest-blogs", latestBlogs);
+router.get("/trending-blogs", trendingBlogs);
 
 module.exports = router;
