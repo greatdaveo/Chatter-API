@@ -4,6 +4,7 @@ const {
   createPost,
   latestBlogs,
   trendingBlogs,
+  searchBlogs,
 } = require("../Controllers/blogController");
 const verifyToken = require("../Middleware/verifyToken");
 
@@ -14,5 +15,6 @@ router.get("/upload-url", uploadURL);
 router.post("/create-blog", verifyToken, createPost);
 router.get("/latest-blogs", latestBlogs);
 router.get("/trending-blogs", trendingBlogs);
+router.post("/search-blogs", searchBlogs);
 
 module.exports = router;

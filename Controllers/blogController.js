@@ -136,10 +136,7 @@ const latestBlogs = async (req, res) => {
       .populate("author", "firstName lastName -_id")
       .sort({ publishedAt: -1 })
       .select("blog_id title description banner activity tags publishedAt -_id")
-      .limit(maxLimit)
-      .catch((err) => {
-        console.log("Latest Blog Data Error:", err);
-      });
+      .limit(maxLimit);
 
     if (!latestBlogData || latestBlogData.length === 0) {
       // console.log("No latest blog data found.");
@@ -164,20 +161,46 @@ const trendingBlogs = async (req, res) => {
         "activity.total_likes": -1,
         publishedAt: -1,
       })
-      .select("blog_id title, publishedat -_id")
+      .select("blog_id title, publishedAt -_id")
       .limit(5);
 
     if (!trendingBlogData || trendingBlogData.length === 0) {
-      console.log("No trending blog data found.");
+      // console.log("No trending blog data found.");
     } else {
-      console.log("Latest Blog Data:", trendingBlogData);
+      // console.log("Latest Blog Data:", trendingBlogData);
     }
 
     return res.status(200).json(trendingBlogData);
   } catch (err) {
-    console.log("Trending Data Error:", err);
+    // console.log("Trending Data Error:", err);
     return res.status(500).json({ error: err.message });
   }
 };
 
-module.exports = { uploadURL, createPost, latestBlogs, trendingBlogs };
+// To Filter and Search For Blog
+const searchBlogs = async (req, res) => {
+  // The tag from the frontend
+  let { tag } = req.body;
+  // This will check if the tag from the frontend is included in the tags array in the database
+  let findQuery = { tags: tag, draft: false };
+  let maxLimit = 5;
+  try {
+    const filteredBlog = await BlogModel.find(findQuery)
+      .populate("author", "firstName lastName -_id")
+      .sort({ publishedAt: -1 })
+      .select("blog_id title description banner activity tags publishedAt -_id")
+      .limit(maxLimit);
+    return res.status(200).json(filteredBlog);
+  } catch (err) {
+    console.error("Filtered Blogs Error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = {
+  uploadURL,
+  createPost,
+  latestBlogs,
+  trendingBlogs,
+  searchBlogs,
+};
